@@ -1,0 +1,10 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 🌸 Personalización opcional */
+body {
+  font-family: 'Poppins', sans-serif;
+  background-color: #fdfdfd;
+}
+
