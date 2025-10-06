@@ -35,139 +35,161 @@ FloraScope/
 └── README.md                       # Documentation (this file)
 
 ```
+
+## Project Structure
+
+```bash
+Flora_scope/
+│
+├── Prediction_model_back/        # Flask backend
+│   ├── app.py                     # Main backend logic (Flask API + Folium Map)
+│   ├── valleCentralData.json      # Local dataset used for model training/testing
+│   ├── mapa_floracion.html        # Auto-generated interactive map
+│   └── requirements.txt           # Python dependencies
+│
+├── flora_scope_frontend/          # React frontend
+│   ├── src/
+│   │   ├── FloraScope.jsx         # Main React component
+│   │   └── index.jsx              # React entry point
+│   ├── package.json               # NPM configuration
+│   └── tailwind.config.js         # Styling configuration
+│
+└── README.md           # Project documentation
+```
+
+---
+
 ## Requirements
-  **Backend**
-  | Tool    | Version (recommended) |
-  |------   |----------|
-  | Python  | ≥ 3.10   | 
-  | pip     | latest   |
-  | virtualenv (optional)    | latest   |
 
-  **Frontend**
-  | Tool    | Version (recommended) |
-  |------   |----------|
-  | Node.js | ≥ 18  | 
-  | npm or yarn     | latest   |
-  
-  
-## Backend Setup
+### Backend (Flask)
+Make sure you have **Python 3.10+** and **pip** installed.
 
-### 1. Navigate to backend folder
-``` 
-cd Prediction_model_back 
-``` 
-
-### 2. Create and activate virtual environment (optional)
-``` 
-#Create 
-python -m venv venv
-
-#Activate 
-source venv/bin/activate       # On Linux / Mac
-# OR
-venv\Scripts\activate          # On Windows
-``` 
-
-### 3. Install dependencies
-``` 
+```bash
 pip install flask flask-cors pandas scikit-learn folium
-``` 
+```
 
-### 4. Run backend server
-``` 
+Optionally, use a **virtual environment**:
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+### Frontend (React)
+Make sure you have **Node.js (v18 or higher)** and **npm** installed.
+
+```bash
+npm install
+npm run dev
+```
+
+---
+
+## Running the Project
+
+### 1️. Run the Flask Backend
+
+```bash
+cd Prediction_model_back
 python app.py
-``` 
+```
+The backend runs on:
+```
+http://127.0.0.1:5000/
+```
 
-You should see something like:
-``` 
- Running on http://127.0.0.1:5000
-``` 
+Endpoints available:
+- `/predict`: Runs the ML model and generates `mapa_floracion.html`.
+- `/mapa`: Serves the interactive map generated with Folium.
 
-If the port 5000 is busy, change it in the last line of app.py:
-``` 
-app.run(debug=True, port=5001)
-``` 
+### 2. Run the React Frontend
 
-### 5. Verify API is working
+```bash
+cd flora_scope_frontend
+npm run dev
+```
+Frontend available at:
+```
+http://localhost:5173/
+```
 
-Open your browser and go to:
-``` 
-http://127.0.0.1:5000/predict
-``` 
+---
 
-You should get a JSON response like:
-``` 
+## How It Works?
+
+### Step 1: Data Loading
+The system loads local observations from `valleCentralData.json`, which includes geographic and environmental variables such as:
+- Latitude, Longitude, Elevation
+- Soil humidity, Vegetation, Standing Water
+- Observation Date
+
+### Step 2: Machine Learning Model
+The backend uses a **Random Forest Classifier** to predict the probability of flowering based on environmental conditions.
+
+### Step 3: Map Generation
+The model predictions are visualized with **Folium** on an interactive map:
+- Green markers → Probable flowering areas
+- Gray markers → No flowering detected
+- Clusters group nearby points for easier visualization
+
+### Step 4: Frontend Integration
+The React frontend connects to Flask through Axios:
+- Fetches model predictions (`/predict`)
+- Displays the generated map (`/mapa`)
+- Shows peak flowering month and probability chart
+
+---
+
+## Key Design Decisions
+
+| Component | Technology | Purpose |
+|------------|-------------|----------|
+| **Backend API** | Flask + scikit-learn | Model execution and API serving |
+| **Visualization** | Folium | Interactive geospatial mapping |
+| **Frontend** | React + TailwindCSS | Interactive UI |
+| **Communication** | Axios + Flask-CORS | Secure data exchange between client/server |
+
+---
+
+## Frontend Features
+
+- **Home (Hero)**: Introduction and access to the interactive map.  
+- **Map View**: Embedded Flask map with a legend and region indicator (California).  
+- **Analysis View**: Monthly flowering probabilities and peak month prediction.
+
+---
+
+## Example Backend Response
+
+```json
 {
   "status": "ok",
-  "predictions": [...],
-  "monthlyProbs": [...],
-  "peakMonth": 4,
-  "peakMonthName": "April"
+  "map_url": "/mapa",
+  "predictions": [
+    {"lat": 37.2, "lon": -121.5, "elev": 134, "date": "2023-03-15", "pred_flowering": 1},
+    {"lat": 36.9, "lon": -120.9, "elev": 145, "date": "2023-04-02", "pred_flowering": 0}
+  ]
 }
-``` 
+```
 
-## Frontend Setup (React +  Vite)
+---
 
-### 1. Navigate to frontend folder
-``` 
-cd flora_scope_frontend
-``` 
+## Why Flask + React Integration?
 
-### 2. Install dependencies
-``` 
-npm install
-``` 
+| Reason | Benefit |
+|--------|----------|
+| Flask handles ML logic | Allows integration of trained scikit-learn models |
+| React provides UI | User-friendly visualization |
+| CORS-enabled API | Secure cross-origin communication |
+| Modular architecture | Each side (backend/frontend) can be deployed separately |
 
-### 3. Start development server
-``` 
-npm run dev
-``` 
+---
 
-``` 
-You’ll see something like:
+## Future Improvements
 
-  VITE v5.0.0  ready in 600ms
-  ➜  Local:   http://localhost:5173/
-``` 
+- Add **real-time probability maps** by date range.  
+- Deploy on **Render** or **Vercel**.  
+- Implement **user-uploaded observation datasets**.
 
-Open that link in your browser.
-
-## Connect Frontend and Backend
-The frontend expects to reach the backend at:
-``` 
-http://127.0.0.1:5000/predict
-``` 
-
-Make sure:
-- Flask (app.py) is running on port 5000
-- React is running on 5173
-- CORS is enabled in your backend (CORS(app) line must be present)
-- You have axios installed in your frontend (npm install axios)
-
-If you see:
-``` 
-⚠️ No se pudo conectar con el servidor Flask
-``` 
-It means Flask is not running, or the port is wrong.
-
-
-## How to run?
-### Backend
-1. Clone or download this repository.
-2. Add your Meteomatics API credentials inside the script:
-``` 
-user = "YOUR USER"
-password = "YOUR PASSWORD"
-``` 
-Run the script:
-``` 
-python oficialPredictionRainforest.py
-``` 
-
-## Expected Output
-1. Classification report (precision, recall, f1-score) for the trained model.
-2. Flowering probability chart by month.
-3. Interactive map (mapa_floracion.html) including:
-    - NASA observation points (green = flowering likely, gray = no flowering).
-    - Estimated most likely flowering month.
-    - Custom legend with map symbols.
+---
