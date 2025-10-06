@@ -11,7 +11,7 @@ from folium.plugins import MarkerCluster
 app = Flask(__name__)
 CORS(app)
 
-#1:Endpoint principal: ejecuta modelo y genera mapa
+# 1: Endpoint principal: ejecuta modelo y genera mapa
 @app.route("/predict", methods=["GET"])
 def run_model():
     dirname = os.path.dirname(__file__)
@@ -85,16 +85,30 @@ def run_model():
     output_path = os.path.join(dirname, "mapa_floracion.html")
     m.save(output_path)
 
-    # Devolver respuesta JSON para React
+    # Cálculo mensual de floración
+    monthly = df.groupby("month")["pred_flowering"].mean().reset_index()
+    monthly["prob"] = (monthly["pred_flowering"] * 100).round(2)
+    monthly = monthly[["month", "prob"]].to_dict(orient="records")
+
+    # Identificar mes pico
+    peak_row = max(monthly, key=lambda x: x["prob"])
+    month_names = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+    peakMonthName = month_names[peak_row["month"] - 1]
+
+    # Devolver JSON completo
     predicciones = df[["lat", "lon", "elev", "date", "pred_flowering"]].to_dict(orient="records")
 
     return jsonify({
         "status": "ok",
         "map_url": "/mapa",
-        "predictions": predicciones
+        "predictions": predicciones,
+        "monthlyProbs": monthly,
+        "peakMonth": peak_row["month"],
+        "peakMonthName": peakMonthName
     })
 
-#2: Endpoint para servir el mapa guardado
+
+# 2: Endpoint para servir el mapa guardado
 @app.route("/mapa", methods=["GET"])
 def mostrar_mapa():
     dirname = os.path.dirname(__file__)
@@ -102,7 +116,7 @@ def mostrar_mapa():
     return send_file(path)
 
 
-#3: Iniciar servidor
+# 3: Iniciar servidor
 if __name__ == "__main__":
     app.run(debug=True)
 
