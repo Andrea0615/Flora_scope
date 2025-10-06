@@ -1,5 +1,5 @@
-from flask_cors import CORS
 from flask import Flask, jsonify, send_file
+from flask_cors import CORS
 import os
 import json
 import pandas as pd
@@ -8,10 +8,13 @@ from sklearn.model_selection import train_test_split
 import folium
 from folium.plugins import MarkerCluster
 
+# ✅ Crear la app Flask antes de usar @app.route
 app = Flask(__name__)
 CORS(app)
 
-#1:Endpoint principal: ejecuta modelo y genera mapa
+# ---------------------------------------------------
+# 1️⃣ Endpoint principal: ejecuta modelo y genera mapa
+# ---------------------------------------------------
 @app.route("/predict", methods=["GET"])
 def run_model():
     dirname = os.path.dirname(__file__)
@@ -45,13 +48,11 @@ def run_model():
     df["date"] = pd.to_datetime(df["date"])
     df["month"] = df["date"].dt.month
 
-    # Variable objetivo (riesgo de floración)
     df["flowering_risk"] = df.apply(
         lambda r: 1 if (r["leaves"] == 1 and r["dry"] == 0) else 0,
         axis=1
     )
 
-    # Entrenar modelo simple
     features = ["lon", "lat", "elev", "dry", "leaves", "water"]
     X_train, X_test, y_train, y_test = train_test_split(
         df[features], df["flowering_risk"], test_size=0.3, random_state=42
@@ -64,8 +65,8 @@ def run_model():
     # Crear mapa con Folium
     m = folium.Map(location=[df["lat"].mean(), df["lon"].mean()],
                    zoom_start=8, tiles="CartoDB positron")
-
     marker_cluster = MarkerCluster().add_to(m)
+
     for _, row in df.iterrows():
         color = "green" if row["pred_flowering"] == 1 else "gray"
         tooltip = (
@@ -81,11 +82,9 @@ def run_model():
             tooltip=tooltip
         ).add_to(marker_cluster)
 
-    # Guardar mapa HTML
     output_path = os.path.join(dirname, "mapa_floracion.html")
     m.save(output_path)
 
-    # Devolver respuesta JSON para React
     predicciones = df[["lat", "lon", "elev", "date", "pred_flowering"]].to_dict(orient="records")
 
     return jsonify({
@@ -94,7 +93,10 @@ def run_model():
         "predictions": predicciones
     })
 
-#2: Endpoint para servir el mapa guardado
+
+# ---------------------------------------------------
+# 2️⃣ Endpoint para servir el mapa guardado
+# ---------------------------------------------------
 @app.route("/mapa", methods=["GET"])
 def mostrar_mapa():
     dirname = os.path.dirname(__file__)
@@ -102,7 +104,9 @@ def mostrar_mapa():
     return send_file(path)
 
 
-#3: Iniciar servidor
+# ---------------------------------------------------
+# 3️⃣ Iniciar servidor
+# ---------------------------------------------------
 if __name__ == "__main__":
     app.run(debug=True)
 
